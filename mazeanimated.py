@@ -139,6 +139,7 @@ class Maze():
 
         actions = []
         cells = []
+        # failedroutes = []
         
 
         # Keep looping until solution found
@@ -152,11 +153,7 @@ class Maze():
             node = frontier.remove()
             self.num_explored += 1
 
-            # IF NODE HAS NO UNEXPLORED NEIGHBORS, WE ARE AT A DEAD END
 
-            # BACKTRACK TO LAST NODE WITH AN UNEXPLORED NEIGHBOR
-
-            # PRINT THIS PATH AS EXPLORED BUT NOT SOLUTION
 
             # If node is the goal, then we have a solution
             if node.state == self.goal:
@@ -172,6 +169,17 @@ class Maze():
                 self.output_image(f"maze{self.counter:03d}.png",show_explored=True)
                 return
             
+            # # DEFINE EXPLORED PATHS WHICH DIDNT LEAD TO SOLUTION
+            # if not any(self.neighbors(node.state)):
+            #     while node.parent is not None:
+            #         failedroutes.append(node.state)
+            #         if any(self.neighbors(node.parent.state)):
+            #             break # found a node with unexplored neighbors
+
+
+        
+                
+
             # create actions and cells to print
             if node.action is not None:
                 actions.append(node.action)
