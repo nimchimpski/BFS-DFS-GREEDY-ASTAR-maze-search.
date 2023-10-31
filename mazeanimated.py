@@ -1,5 +1,6 @@
 import sys
 import time
+from PIL import Image, ImageDraw, ImageSequence
 
 class Node():
     def __init__(self, state, parent, action):
@@ -42,7 +43,11 @@ class QueueFrontier(StackFrontier):
 
 class Maze():
 
+    counter = 0
+
     def __init__(self, filename):
+
+        
 
         # Read file and set height and width of maze
         with open(filename) as f:
@@ -134,7 +139,7 @@ class Maze():
 
         actions = []
         cells = []
-        counter = 0
+        
 
         # Keep looping until solution found
         while True:
@@ -147,7 +152,11 @@ class Maze():
             node = frontier.remove()
             self.num_explored += 1
 
+            # IF NODE HAS NO UNEXPLORED NEIGHBORS, WE ARE AT A DEAD END
 
+            # BACKTRACK TO LAST NODE WITH AN UNEXPLORED NEIGHBOR
+
+            # PRINT THIS PATH AS EXPLORED BUT NOT SOLUTION
 
             # If node is the goal, then we have a solution
             if node.state == self.goal:
@@ -160,6 +169,7 @@ class Maze():
                 actions.reverse()
                 cells.reverse()
                 self.solution = (actions, cells)
+                self.output_image(f"maze{self.counter:03d}.png",show_explored=True)
                 return
             
             # create actions and cells to print
@@ -174,10 +184,10 @@ class Maze():
             self.explored.add(node.state)
 
             self.print()
-            zeroedcounter = str(counter).zfill(3)
-            filename = "maze" + zeroedcounter + ".png"
+            zeroedcounter = str(self.counter).zfill(3)
+            filename = f"maze{zeroedcounter}.png"
             self.output_image(filename)
-            counter += 1
+            self.counter += 1
 
             # Add neighbors to frontier
             for action, state in self.neighbors(node.state):
@@ -187,7 +197,7 @@ class Maze():
 
 
     def output_image(self, filename, show_solution=True, show_explored=True):
-        from PIL import Image, ImageDraw
+        # from PIL import Image, ImageDraw, ImageSequence
         cell_size = 50
         cell_border = 2
 
@@ -234,7 +244,7 @@ class Maze():
                     fill=fill
                 )
         
-        img.save(filename)
+        img.save(f"images/{filename}")
 
 
 if len(sys.argv) != 2:
@@ -248,4 +258,14 @@ m.solve()
 print("States Explored:", m.num_explored)
 print("Solution:")
 m.print()
-m.output_image("maze.png", show_explored=True)
+# m.counter+=1
+
+
+# LOAD PREVIOUSLY SAVED IMAGES INTO A LIST 
+images=[]
+for i in range(m.counter):
+    imgfilename = f"images/maze{i:03d}.png"
+    images.append(Image.open(imgfilename))
+
+# MAKE AN ANIMATION
+images[0].save('maze.gif', save_all=True, append_images=images[1:], optimize=False, duration=75, loop=0)
