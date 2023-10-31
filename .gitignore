@@ -1,0 +1,18 @@
+
+venv
+
+mazepicscomp
+
+
+
+
+
+
+
+
+
+
+
+
+#   filetoignore: This pattern will ignore any file or directory named filetoignore anywhere in the project.
+#   *.log: This pattern will ignore all files with the .log extension, no matter where they are in the project.
