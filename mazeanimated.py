@@ -1,3 +1,4 @@
+import os
 import sys
 import time
 from PIL import Image, ImageDraw, ImageSequence
@@ -33,21 +34,19 @@ class StackFrontier():
             self.frontier = self.frontier[:-1]
             return node
         
-    def lowercostnode(self,cost):
-        for node in self.frontier:
-            print(f"node.cost: {node.cost}")
-            if node.cost < cost:
-                return node
-            else:
-                return None
+
     # SORT BY COST
-    def sort(self):
-        print(f"---frontier before sort: {[x.state for x in self.frontier]}")
-        self.frontier.sort(key=lambda x: x.cost, reverse=False)
-        print(f"---frontier before sort: {[x.state for x in self.frontier]}")
+    def greedysort(self):
+        goal = m.goal
+        # print(f"---+++in frontier.greedysort()")
+        # print(f"---goal: {goal} ")
 
-        
+        def futurecost(node):
+            return abs((node.state[0] - goal[0])) + abs((node.state[1] - goal[1]))
 
+        self.frontier.sort(key=lambda node: futurecost(node), reverse=True)
+
+        return 'greedybestfirst'
 
 class QueueFrontier(StackFrontier):
 
@@ -62,6 +61,7 @@ class QueueFrontier(StackFrontier):
 class Maze():
 
     counter = 0
+    heuristic = 'None'
 
     def __init__(self, filename):
 
@@ -140,6 +140,11 @@ class Maze():
 
     def solve(self):
         """Finds a solution to maze, if one exists."""
+        # Clear the 'images' folder by removing all files in it
+        for filename in os.listdir('images'):
+            file_path = os.path.join('images', filename)
+            if os.path.isfile(file_path):
+                os.remove(file_path)
 
         # Keep track of number of states explored
         self.num_explored = 0
@@ -157,6 +162,7 @@ class Maze():
         cells = []
         # failedroutes = []
         
+      
 
         # Keep looping until solution found
         while True:
@@ -164,6 +170,15 @@ class Maze():
             # If nothing left in frontier, then no path
             if frontier.empty():
                 raise Exception("no solution")
+            """
+                    NODE CHOICE : HEURISTIC
+            """
+
+            ####      SORT FRONTIER BY COST BEFORE REMOVING A NODE
+            # print(f"frontier before sort: {[node.state for node in frontier.frontier]}")
+            self.heuristic = frontier.greedysort()
+            print(f"---heuristic: {self.heuristic}")
+
 
             # Choose a node from the frontier
             node = frontier.remove()
@@ -180,19 +195,13 @@ class Maze():
                 actions.reverse()
                 cells.reverse()
                 self.solution = (actions, cells)
+                print(f"---IN GOAL COUNTER: {self.counter}")
                 self.output_image(f"maze{self.counter:03d}.png",show_explored=True)
                 return
 
             # create actions and cells to print
             if node.action is not None:
-                ########   A-STAR HEURISTIC   ########
-                
-                # COMPARE THE COST OF THE NEXT NODE TO THE COST OF THE CURRENT NODE
-                if len(frontier.frontier) != 0  and node.cost > frontier.frontier[-1].cost:
-                    print(f"---found cheaper node")
-                    frontier.add(node)
-                    frontier.sort()
-                    node = frontier.remove()
+           
             
                 # my bit just for printing
                 actions.append(node.action)
@@ -204,10 +213,10 @@ class Maze():
 
             ########   printy stuff   ########
             self.print()
-            # zeroedcounter = str(self.counter).zfill(3)
-            # filename = f"maze{zeroedcounter}.png"
-            # self.output_image(filename)
-            # self.counter += 1
+            zeroedcounter = str(self.counter).zfill(3)
+            filename = f"maze{zeroedcounter}.png"
+            self.output_image(filename)
+            self.counter += 1
 
             """
                         EXOAND THE FRONTIER
@@ -215,21 +224,13 @@ class Maze():
             # Add neighbors to frontier
             for action, state in self.neighbors(node.state):
                 if not frontier.contains_state(state) and state not in self.explored:
-                    # calculate cost for this neighbor/potential node
 
-                    DEF FUNCTION TO CALCULATE FUTURE COST
-
-                   IF COST IS HIGHER THAN NODE IN FRONTIER...
-
-                    goal = self.goal
-                    futurecost = abs((state[0]- goal[0])) + abs((state[1] - goal[1]))
-                    print(f"---neighbors state: {state}futurecost: {futurecost}") 
-                    # STORE COST OF PATH TO NODE
-
-                    child = Node(state=state, parent=node, action=action, pathcost=node.pathcost+1, futurecost=futurecost)
-                    print(f"---child.pathcost: {child.pathcost} futurecost: {futurecost} cost: {child.cost}")
+                    child = Node(state=state, parent=node, action=action, pathcost=node.pathcost+1)
+                    print(f"---child.pathcost: {child.pathcost}")
                     frontier.add(child)
 
+    def heuristicused(self):
+            return self.solve.heuristic
 
     def output_image(self, filename, show_solution=True, show_explored=True):
         # from PIL import Image, ImageDraw, ImageSequence
@@ -298,9 +299,14 @@ m.print()
 
 # LOAD PREVIOUSLY SAVED IMAGES INTO A LIST 
 images=[]
-for i in range(m.counter):
+for i in range(m.counter+1):
     imgfilename = f"images/maze{i:03d}.png"
     images.append(Image.open(imgfilename))
 
-# # MAKE AN ANIMATION
-# images[0].save('maze.gif', save_all=True, append_images=images[1:], optimize=False, duration=75, loop=0)
+# PAUSE LAST FRAME
+images[-1].info["duration"] = 2000
+
+# MAKE AN ANIMATION
+print(f"---m.heuristic: {m.heuristic}")
+
+images[0].save(f'maze{str(m.heuristic)}.gif', save_all=True, append_images=images[1:], optimize=False, duration=75, loop=0)
