@@ -14,6 +14,7 @@ class Node():
 
 
 class StackFrontier():
+
     def __init__(self):
         self.frontier = []
 
@@ -33,20 +34,11 @@ class StackFrontier():
             node = self.frontier[-1]
             self.frontier = self.frontier[:-1]
             return node
-        
+    
 
-    # SORT BY COST
-    def greedysort(self):
-        goal = m.goal
-        # print(f"---+++in frontier.greedysort()")
-        # print(f"---goal: {goal} ")
-
-        def futurecost(node):
-            return abs((node.state[0] - goal[0])) + abs((node.state[1] - goal[1]))
-
-        self.frontier.sort(key=lambda node: futurecost(node), reverse=True)
-
-        return 'greedybestfirst'
+    # def astarsort(self):
+    #     print(f"---+++in frontier.astarsort()")
+    #     goal = m.goal
 
 class QueueFrontier(StackFrontier):
 
@@ -151,9 +143,9 @@ class Maze():
 
         # Initialize frontier to just the starting position
         start = Node(state=self.start, parent=None, action=None)
-        frontier = StackFrontier()
+        self.frontier = StackFrontier()
         # frontier = QueueFrontier()
-        frontier.add(start)
+        self.frontier.add(start)
 
         # Initialize an empty explored set
         self.explored = set()
@@ -168,7 +160,7 @@ class Maze():
         while True:
             # time.sleep(.2)
             # If nothing left in frontier, then no path
-            if frontier.empty():
+            if self.frontier.empty():
                 raise Exception("no solution")
             """
                     NODE CHOICE : HEURISTIC
@@ -176,12 +168,12 @@ class Maze():
 
             ####      SORT FRONTIER BY COST BEFORE REMOVING A NODE
             # print(f"frontier before sort: {[node.state for node in frontier.frontier]}")
-            self.heuristic = frontier.greedysort()
+            self.heuristic = self.astarsort()
             print(f"---heuristic: {self.heuristic}")
 
 
             # Choose a node from the frontier
-            node = frontier.remove()
+            node = self.frontier.remove()
             self.num_explored += 1
 
             # If node is the goal, then we have a solution
@@ -223,14 +215,32 @@ class Maze():
             """
             # Add neighbors to frontier
             for action, state in self.neighbors(node.state):
-                if not frontier.contains_state(state) and state not in self.explored:
+                if not self.frontier.contains_state(state) and state not in self.explored:
 
                     child = Node(state=state, parent=node, action=action, pathcost=node.pathcost+1)
                     print(f"---child.pathcost: {child.pathcost}")
-                    frontier.add(child)
+                    self.frontier.add(child)
 
+    def futurecost(self, node):
+        return abs((node.state[0] - self.goal[0])) + abs((node.state[1] - self.goal[1]))
+
+        # SORT BY COST
+    
+    def greedysort(self):
+        # print(f"---+++in frontier.greedysort()")
+        # print(f"---goal: {goal} ")
+        self.frontier.frontier.sort(key=lambda node: self.futurecost(node), reverse=True)
+        return 'greedybestfirst'
+
+    def astarsort(self):
+        # print(f"---+++in frontier.astarsort()")
+        # print(f"---goal: {goal} ")
+        # print(f"---astarcost: {astarcost}")
+        self.frontier.frontier.sort(key=lambda node: self.futurecost(node)+node.cost, reverse=True)
+        return 'astar'
+    
     def heuristicused(self):
-            return self.solve.heuristic
+        return self.solve.heuristic
 
     def output_image(self, filename, show_solution=True, show_explored=True):
         # from PIL import Image, ImageDraw, ImageSequence
@@ -304,7 +314,7 @@ for i in range(m.counter+1):
     images.append(Image.open(imgfilename))
 
 # PAUSE LAST FRAME
-images[-1].info["duration"] = 2000
+# images[-1].info["duration"] = 2000
 
 # MAKE AN ANIMATION
 print(f"---m.heuristic: {m.heuristic}")
