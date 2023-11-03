@@ -3,10 +3,13 @@ import time
 from PIL import Image, ImageDraw, ImageSequence
 
 class Node():
-    def __init__(self, state, parent, action):
+    def __init__(self, state, parent, action, pathcost=0, futurecost=0):
         self.state = state
         self.parent = parent
         self.action = action
+        self.pathcost = pathcost
+        self.futurecost = futurecost
+        self.cost = pathcost + futurecost
 
 
 class StackFrontier():
@@ -29,6 +32,21 @@ class StackFrontier():
             node = self.frontier[-1]
             self.frontier = self.frontier[:-1]
             return node
+        
+    def lowercostnode(self,cost):
+        for node in self.frontier:
+            print(f"node.cost: {node.cost}")
+            if node.cost < cost:
+                return node
+            else:
+                return None
+    # SORT BY COST
+    def sort(self):
+        print(f"---frontier before sort: {[x.state for x in self.frontier]}")
+        self.frontier.sort(key=lambda x: x.cost, reverse=False)
+        print(f"---frontier before sort: {[x.state for x in self.frontier]}")
+
+        
 
 
 class QueueFrontier(StackFrontier):
@@ -46,8 +64,6 @@ class Maze():
     counter = 0
 
     def __init__(self, filename):
-
-        
 
         # Read file and set height and width of maze
         with open(filename) as f:
@@ -153,8 +169,6 @@ class Maze():
             node = frontier.remove()
             self.num_explored += 1
 
-
-
             # If node is the goal, then we have a solution
             if node.state == self.goal:
                 actions = []
@@ -168,39 +182,52 @@ class Maze():
                 self.solution = (actions, cells)
                 self.output_image(f"maze{self.counter:03d}.png",show_explored=True)
                 return
-            
-            # # DEFINE EXPLORED PATHS WHICH DIDNT LEAD TO SOLUTION
-            # if not any(self.neighbors(node.state)):
-            #     while node.parent is not None:
-            #         failedroutes.append(node.state)
-            #         if any(self.neighbors(node.parent.state)):
-            #             break # found a node with unexplored neighbors
-
-
-        
-                
 
             # create actions and cells to print
             if node.action is not None:
+                ########   A-STAR HEURISTIC   ########
+                
+                # COMPARE THE COST OF THE NEXT NODE TO THE COST OF THE CURRENT NODE
+                if len(frontier.frontier) != 0  and node.cost > frontier.frontier[-1].cost:
+                    print(f"---found cheaper node")
+                    frontier.add(node)
+                    frontier.sort()
+                    node = frontier.remove()
+            
+                # my bit just for printing
                 actions.append(node.action)
                 cells.append(node.state)
                 self.solution = (actions, cells)
 
-
-
             # Mark node as explored
             self.explored.add(node.state)
 
+            ########   printy stuff   ########
             self.print()
-            zeroedcounter = str(self.counter).zfill(3)
-            filename = f"maze{zeroedcounter}.png"
-            self.output_image(filename)
-            self.counter += 1
+            # zeroedcounter = str(self.counter).zfill(3)
+            # filename = f"maze{zeroedcounter}.png"
+            # self.output_image(filename)
+            # self.counter += 1
 
+            """
+                        EXOAND THE FRONTIER
+            """
             # Add neighbors to frontier
             for action, state in self.neighbors(node.state):
                 if not frontier.contains_state(state) and state not in self.explored:
-                    child = Node(state=state, parent=node, action=action)
+                    # calculate cost for this neighbor/potential node
+
+                    DEF FUNCTION TO CALCULATE FUTURE COST
+
+                   IF COST IS HIGHER THAN NODE IN FRONTIER...
+
+                    goal = self.goal
+                    futurecost = abs((state[0]- goal[0])) + abs((state[1] - goal[1]))
+                    print(f"---neighbors state: {state}futurecost: {futurecost}") 
+                    # STORE COST OF PATH TO NODE
+
+                    child = Node(state=state, parent=node, action=action, pathcost=node.pathcost+1, futurecost=futurecost)
+                    print(f"---child.pathcost: {child.pathcost} futurecost: {futurecost} cost: {child.cost}")
                     frontier.add(child)
 
 
@@ -275,5 +302,5 @@ for i in range(m.counter):
     imgfilename = f"images/maze{i:03d}.png"
     images.append(Image.open(imgfilename))
 
-# MAKE AN ANIMATION
-images[0].save('maze.gif', save_all=True, append_images=images[1:], optimize=False, duration=75, loop=0)
+# # MAKE AN ANIMATION
+# images[0].save('maze.gif', save_all=True, append_images=images[1:], optimize=False, duration=75, loop=0)
